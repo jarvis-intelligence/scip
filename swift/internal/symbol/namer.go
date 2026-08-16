@@ -1,27 +1,22 @@
-// Package symbol defines the scip-swift SCIP symbol scheme and the shared
-// namer both indexing paths (SourceKit-LSP semantic and tree-sitter fallback)
-// use to produce symbol strings.
-//
-// The namer is a pure function library: it constructs protobuf *scip.Symbol
-// values and formats them with scip.VerboseSymbolFormatter. Descriptor
-// suffixes and backtick escaping come only from the bindings formatter —
-// symbols are never assembled with fmt.Sprintf or string concatenation.
 package symbol
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/scip-code/scip/bindings/go/scip"
 )
 
-// Scheme is the SCIP symbol scheme prefix for all scip-swift global symbols.
-//
-// CAUTION: The scheme must not start with "local" — that prefix is reserved
-// by the SCIP symbol grammar for document-scoped symbols.
-const Scheme = "scip-swift"
+// ErrEmptyModule is returned by Symbol when SymbolInput.Module is empty: a
+// global symbol cannot be named without its owning module.
+var ErrEmptyModule = errors.New("symbol input has empty Module")
 
-// ManagerSwiftPM is the package manager for SwiftPM target modules.
-const ManagerSwiftPM = "swiftpm"
+// ErrEmptyName is returned by Symbol when SymbolInput.Name is empty.
+var ErrEmptyName = errors.New("symbol input has empty Name")
+
+// localScheme is the reserved scheme prefix for document-scoped symbols.
+const localScheme = "local"
 
 // Container is one node of a symbol's extended-type-aware ancestry,
 // outermost first.
@@ -34,7 +29,8 @@ type Container struct {
 // (from symbolInfo/container chains) and the fallback path (from syntax)
 // must be able to populate it.
 type SymbolInput struct {
-	// Module is the owning Swift module (target) name.
+	// Module is the owning Swift module (target) name. For a retroactive
+	// extension member this is the module OWNING the extended type (SYM-02).
 	Module string
 	// IsSystemModule is true for stdlib/SDK symbols (manager "swift").
 	IsSystemModule bool
@@ -42,57 +38,92 @@ type SymbolInput struct {
 	// modules; unused for SwiftPM targets.
 	SwiftToolchainVersion string
 	// ContainerPath is the extended-type-aware ancestry, outermost first.
+	// An empty ContainerPath means a top-level symbol.
 	ContainerPath []Container
 	// Name is the source name; may be an operator or Unicode.
 	Name string
 	// Kind is the declaration category of Name.
 	Kind DeclKind
 	// OverloadIndex is 0 for no disambiguator; N>0 renders "(+N)"
-	// (scip-java style).
+	// (scip-java style), derived from source declaration order.
 	OverloadIndex int
 }
 
 // Symbol returns the canonical scip-swift SCIP symbol string for the input.
 //
-// The string is produced by building a *scip.Symbol (package manager
-// ManagerSwiftPM, package name in.Module, version ".") with Type descriptors
-// for the container path and a suffixed descriptor for Name, then formatting
-// via scip.VerboseSymbolFormatter.FormatSymbol. The result is validated with
+// The string is produced by building a *scip.Symbol (SwiftPM packages use
+// ManagerSwiftPM with version "."; system modules use ManagerSystem with
+// SwiftToolchainVersion) with one descriptor per ancestry node plus a
+// suffixed descriptor for Name, then formatting via
+// scip.VerboseSymbolFormatter. Escaping is the formatter's job — the namer
+// adds no escaping code of its own. The result is validated with
 // scip.ParseSymbol before it is returned: a namer bug surfaces as an error,
 // never as a malformed string reaching the index.
 func Symbol(in SymbolInput) (string, error) {
-	sym := &scip.Symbol{
-		Scheme: Scheme,
-		Package: &scip.Package{
-			Manager: ManagerSwiftPM,
-			Name:    in.Module,
-			Version: ".",
-		},
+	if in.Module == "" {
+		return "", ErrEmptyModule
 	}
+	if in.Name == "" {
+		return "", ErrEmptyName
+	}
+
+	pkg := &scip.Package{Manager: ManagerSwiftPM, Name: in.Module, Version: "."}
+	if in.IsSystemModule {
+		pkg.Manager = ManagerSystem
+		// An empty version renders as the "." placeholder (the formatter
+		// maps "" to "." and the parser maps it back).
+		pkg.Version = in.SwiftToolchainVersion
+	}
+
+	sym := &scip.Symbol{Scheme: Scheme, Package: pkg}
 	for _, container := range in.ContainerPath {
-		sym.Descriptors = append(sym.Descriptors, &scip.Descriptor{
-			Name:   container.Name,
-			Suffix: scip.Descriptor_Type,
-		})
+		descriptor := &scip.Descriptor{Name: container.Name}
+		switch container.Kind {
+		case DeclKindModule:
+			descriptor.Suffix = scip.Descriptor_Namespace
+		case DeclKindStruct, DeclKindClass, DeclKindEnum, DeclKindProtocol, DeclKindTypeAlias:
+			descriptor.Suffix = scip.Descriptor_Type
+		case DeclKindFunc, DeclKindMethod, DeclKindOperator, DeclKindConstructor,
+			DeclKindDestructor, DeclKindGetter, DeclKindSetter, DeclKindSubscript, DeclKindProtocolMethod:
+			descriptor.Suffix = scip.Descriptor_Method
+		case DeclKindProperty, DeclKindConstant, DeclKindVariable, DeclKindEnumCase:
+			descriptor.Suffix = scip.Descriptor_Term
+		case DeclKindTypeParameter:
+			descriptor.Suffix = scip.Descriptor_TypeParameter
+		case DeclKindParameter:
+			descriptor.Suffix = scip.Descriptor_Parameter
+		case DeclKindMacro:
+			descriptor.Suffix = scip.Descriptor_Macro
+		default:
+			return "", fmt.Errorf("namer cannot map unsupported container DeclKind %d", container.Kind)
+		}
+		sym.Descriptors = append(sym.Descriptors, descriptor)
 	}
+
+	descriptor := &scip.Descriptor{Name: in.Name}
 	switch in.Kind {
-	case DeclKindStruct:
-		sym.Descriptors = append(sym.Descriptors, &scip.Descriptor{
-			Name:   in.Name,
-			Suffix: scip.Descriptor_Type,
-		})
-	case DeclKindMethod:
-		method := &scip.Descriptor{
-			Name:   in.Name,
-			Suffix: scip.Descriptor_Method,
-		}
+	case DeclKindModule:
+		descriptor.Suffix = scip.Descriptor_Namespace
+	case DeclKindStruct, DeclKindClass, DeclKindEnum, DeclKindProtocol, DeclKindTypeAlias:
+		descriptor.Suffix = scip.Descriptor_Type
+	case DeclKindFunc, DeclKindMethod, DeclKindOperator, DeclKindConstructor,
+		DeclKindDestructor, DeclKindGetter, DeclKindSetter, DeclKindSubscript, DeclKindProtocolMethod:
+		descriptor.Suffix = scip.Descriptor_Method
 		if in.OverloadIndex > 0 {
-			method.Disambiguator = fmt.Sprintf("+%d", in.OverloadIndex)
+			descriptor.Disambiguator = fmt.Sprintf("+%d", in.OverloadIndex)
 		}
-		sym.Descriptors = append(sym.Descriptors, method)
+	case DeclKindProperty, DeclKindConstant, DeclKindVariable, DeclKindEnumCase:
+		descriptor.Suffix = scip.Descriptor_Term
+	case DeclKindTypeParameter:
+		descriptor.Suffix = scip.Descriptor_TypeParameter
+	case DeclKindParameter:
+		descriptor.Suffix = scip.Descriptor_Parameter
+	case DeclKindMacro:
+		descriptor.Suffix = scip.Descriptor_Macro
 	default:
 		return "", fmt.Errorf("namer cannot map unsupported DeclKind %d", in.Kind)
 	}
+	sym.Descriptors = append(sym.Descriptors, descriptor)
 
 	s := scip.VerboseSymbolFormatter.FormatSymbol(sym)
 	if _, err := scip.ParseSymbol(s); err != nil {
@@ -102,8 +133,46 @@ func Symbol(in SymbolInput) (string, error) {
 }
 
 // LocalSymbol returns a document-scoped local symbol string "local <id>"
-// where id is the source name sanitized to a simple identifier with the
-// ordinal appended for disambiguation.
+// where id is the source name sanitized to a simple identifier — every rune
+// outside the simple-identifier set collapses to "_" — with the ordinal
+// appended as "_N" when it is greater than zero. Unicode source names
+// (emoji, CJK) never appear raw in a local id; the display name keeps the
+// source spelling. The returned string is the formatter's rendering of the
+// local-form *scip.Symbol, never assembled by hand.
 func LocalSymbol(sourceName string, ordinal int) string {
-	return ""
+	id := sanitizeLocalID(sourceName)
+	if ordinal > 0 {
+		id = fmt.Sprintf("%s_%d", id, ordinal)
+	}
+	sym := &scip.Symbol{
+		Scheme:      localScheme,
+		Descriptors: []*scip.Descriptor{{Name: id, Suffix: scip.Descriptor_Local}},
+	}
+	return scip.VerboseSymbolFormatter.FormatSymbol(sym)
+}
+
+// sanitizeLocalID maps a source name onto the <simple-identifier> charset
+// the local form requires, collapsing every other rune to "_". A name with
+// no identifier characters at all sanitizes to "_".
+func sanitizeLocalID(sourceName string) string {
+	var b strings.Builder
+	for _, r := range sourceName {
+		if isSimpleIdentifierCharacter(r) {
+			b.WriteRune(r)
+		} else {
+			b.WriteRune('_')
+		}
+	}
+	if b.Len() == 0 {
+		return "_"
+	}
+	return b.String()
+}
+
+// isSimpleIdentifierCharacter mirrors the <identifier-character> set of the
+// SCIP symbol grammar (scip.proto): '_', '+', '-', '$', and ASCII letters
+// and digits.
+func isSimpleIdentifierCharacter(r rune) bool {
+	return r == '_' || r == '+' || r == '-' || r == '$' ||
+		('a' <= r && r <= 'z') || ('A' <= r && r <= 'Z') || ('0' <= r && r <= '9')
 }
