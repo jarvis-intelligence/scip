@@ -72,13 +72,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (to be filled by roadmap) | | |
+| SYM-01 | Phase 1: Symbol Scheme & Module Foundations | Pending |
+| SYM-02 | Phase 1: Symbol Scheme & Module Foundations | Pending |
+| SYM-03 | Phase 2: Fallback Indexer & Emission Pipeline | Pending |
+| SYM-04 | Phase 3: Semantic Indexing on SwiftPM | Pending |
+| NAV-01 | Phase 3: Semantic Indexing on SwiftPM | Pending |
+| NAV-02 | Phase 3: Semantic Indexing on SwiftPM | Pending |
+| NAV-03 | Phase 3: Semantic Indexing on SwiftPM | Pending |
+| REL-01 | Phase 4: Hierarchies & Relationships | Pending |
+| REL-02 | Phase 4: Hierarchies & Relationships | Pending |
+| REL-03 | Phase 4: Hierarchies & Relationships | Pending |
+| PROJ-01 | Phase 3: Semantic Indexing on SwiftPM | Pending |
+| PROJ-02 | Phase 5: Xcode Project Support | Pending |
+| PROJ-03 | Phase 5: Xcode Project Support | Pending |
+| FBQ-01 | Phase 2: Fallback Indexer & Emission Pipeline | Pending |
+| FBQ-02 | Phase 2: Fallback Indexer & Emission Pipeline | Pending |
+| FBQ-03 | Phase 6: Release & End-to-End Validation | Pending |
+| FBQ-04 | Phase 6: Release & End-to-End Validation | Pending |
 
 **Coverage:**
 - v1 requirements: 17 total
-- Mapped to phases: 0
-- Unmapped: 17 ⚠️ (roadmap creation pending)
+- Mapped to phases: 17
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-08-16*
-*Last updated: 2026-08-16 after initial definition*
+*Last updated: 2026-08-16 after roadmap creation (traceability filled, 17/17 mapped)*
