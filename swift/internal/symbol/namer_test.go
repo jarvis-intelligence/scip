@@ -29,7 +29,7 @@ func TestSymbolMethodOnStructRoundTrips(t *testing.T) {
 
 	parsed, err := scip.ParseSymbol(want)
 	require.NoError(t, err)
-	require.Equal(t, scip.Scheme(Scheme), parsed.Scheme)
+	require.Equal(t, Scheme, parsed.Scheme)
 
 	formatted := scip.VerboseSymbolFormatter.FormatSymbol(parsed)
 	require.Equal(t, want, formatted, "parse->format must be the identity")
