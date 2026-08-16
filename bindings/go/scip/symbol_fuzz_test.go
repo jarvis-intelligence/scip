@@ -18,6 +18,14 @@ import (
 // The seed corpus runs under plain `go test` (and thus under the Nix
 // go-bindings check with -tags asserts); `-fuzz` soaks are a local-only
 // exercise and are deliberately not wired into CI.
+//
+// KNOWN PRE-EXISTING LIMITATION (found by a local -fuzz soak, not by any
+// seed): non-canonical inputs that spell an empty package field as a
+// literal empty string (e.g. " 0 0 0 0!") parse successfully but re-format
+// with the canonical "." placeholder (". 0 0 0 0!") — writeEscapedPackage
+// maps "" to ".". The identity property holds for canonical spellings;
+// canonicalizing or rejecting the empty spelling is a bindings behavior
+// change tracked in the phase's deferred-items.md, out of scope here.
 func FuzzParseSymbol(f *testing.F) {
 	for _, seed := range []string{
 		// Seeds from TestParseSymbol.
