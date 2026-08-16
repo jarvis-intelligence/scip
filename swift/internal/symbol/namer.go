@@ -76,32 +76,47 @@ func Symbol(in SymbolInput) (string, error) {
 	}
 
 	sym := &scip.Symbol{Scheme: Scheme, Package: pkg}
-	for _, container := range in.ContainerPath {
-		descriptor := &scip.Descriptor{Name: container.Name}
-		switch container.Kind {
-		case DeclKindModule:
-			descriptor.Suffix = scip.Descriptor_Namespace
-		case DeclKindStruct, DeclKindClass, DeclKindEnum, DeclKindProtocol, DeclKindTypeAlias:
-			descriptor.Suffix = scip.Descriptor_Type
-		case DeclKindFunc, DeclKindMethod, DeclKindOperator, DeclKindConstructor,
-			DeclKindDestructor, DeclKindGetter, DeclKindSetter, DeclKindSubscript, DeclKindProtocolMethod:
-			descriptor.Suffix = scip.Descriptor_Method
-		case DeclKindProperty, DeclKindConstant, DeclKindVariable, DeclKindEnumCase:
-			descriptor.Suffix = scip.Descriptor_Term
-		case DeclKindTypeParameter:
-			descriptor.Suffix = scip.Descriptor_TypeParameter
-		case DeclKindParameter:
-			descriptor.Suffix = scip.Descriptor_Parameter
-		case DeclKindMacro:
-			descriptor.Suffix = scip.Descriptor_Macro
-		default:
-			return "", fmt.Errorf("namer cannot map unsupported container DeclKind %d", container.Kind)
-		}
-		sym.Descriptors = append(sym.Descriptors, descriptor)
+	descriptors, err := appendDescriptors(in)
+	if err != nil {
+		return "", err
 	}
+	sym.Descriptors = descriptors
 
-	descriptor := &scip.Descriptor{Name: in.Name}
-	switch in.Kind {
+	s := scip.VerboseSymbolFormatter.FormatSymbol(sym)
+	if _, err := scip.ParseSymbol(s); err != nil {
+		return "", fmt.Errorf("namer produced unparseable symbol %q: %w", s, err)
+	}
+	return s, nil
+}
+
+// appendDescriptors builds the descriptor chain for the input: one
+// descriptor per ContainerPath node (outermost first) followed by the
+// descriptor for Name. It is the single place the frozen scheme chooses
+// descriptor suffixes.
+func appendDescriptors(in SymbolInput) ([]*scip.Descriptor, error) {
+	descriptors := make([]*scip.Descriptor, 0, len(in.ContainerPath)+1)
+	for _, container := range in.ContainerPath {
+		descriptor, err := newDescriptor(container.Name, container.Kind, 0)
+		if err != nil {
+			return nil, err
+		}
+		descriptors = append(descriptors, descriptor)
+	}
+	descriptor, err := newDescriptor(in.Name, in.Kind, in.OverloadIndex)
+	if err != nil {
+		return nil, err
+	}
+	return append(descriptors, descriptor), nil
+}
+
+// newDescriptor maps (name, kind) onto one descriptor with the suffix the
+// frozen scheme prescribes for the kind. Overload indices apply only to the
+// Method family: the formatter renders disambiguators solely for
+// Descriptor_Method, so an OverloadIndex greater than 0 on any other family
+// is ignored rather than corrupted into the string.
+func newDescriptor(name string, kind DeclKind, overloadIndex int) (*scip.Descriptor, error) {
+	descriptor := &scip.Descriptor{Name: name}
+	switch kind {
 	case DeclKindModule:
 		descriptor.Suffix = scip.Descriptor_Namespace
 	case DeclKindStruct, DeclKindClass, DeclKindEnum, DeclKindProtocol, DeclKindTypeAlias:
@@ -109,8 +124,8 @@ func Symbol(in SymbolInput) (string, error) {
 	case DeclKindFunc, DeclKindMethod, DeclKindOperator, DeclKindConstructor,
 		DeclKindDestructor, DeclKindGetter, DeclKindSetter, DeclKindSubscript, DeclKindProtocolMethod:
 		descriptor.Suffix = scip.Descriptor_Method
-		if in.OverloadIndex > 0 {
-			descriptor.Disambiguator = fmt.Sprintf("+%d", in.OverloadIndex)
+		if overloadIndex > 0 {
+			descriptor.Disambiguator = fmt.Sprintf("+%d", overloadIndex)
 		}
 	case DeclKindProperty, DeclKindConstant, DeclKindVariable, DeclKindEnumCase:
 		descriptor.Suffix = scip.Descriptor_Term
@@ -121,15 +136,9 @@ func Symbol(in SymbolInput) (string, error) {
 	case DeclKindMacro:
 		descriptor.Suffix = scip.Descriptor_Macro
 	default:
-		return "", fmt.Errorf("namer cannot map unsupported DeclKind %d", in.Kind)
+		return nil, fmt.Errorf("namer cannot map unsupported DeclKind %d", kind)
 	}
-	sym.Descriptors = append(sym.Descriptors, descriptor)
-
-	s := scip.VerboseSymbolFormatter.FormatSymbol(sym)
-	if _, err := scip.ParseSymbol(s); err != nil {
-		return "", fmt.Errorf("namer produced unparseable symbol %q: %w", s, err)
-	}
-	return s, nil
+	return descriptor, nil
 }
 
 // LocalSymbol returns a document-scoped local symbol string "local <id>"
