@@ -36,13 +36,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The new `swift/` module builds and its tests pass through `go.work`, the paths-filtered CI job, and `nix flake check` — nothing in the existing repo (Go workspace, bindings codegen, reprolang tests) breaks
   5. Spike findings are recorded with measured evidence: a SourceKit-LSP capability inventory (overloads, retroactive extensions, generics, witnesses) and harvest performance on a fixture repo, with an explicit go/no-go verdict on the LSP semantic path for v1
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 
 Plans:
 
 - [x] 01-01-PLAN.md
 - [x] 01-02-PLAN.md
-- [ ] 01-03-PLAN.md
+- [x] 01-03-PLAN.md
 
 **Wave 1**
 
@@ -50,8 +50,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-02: Swift SCIP symbol-scheme spec + shared namer with `scip.ParseSymbol` round-trip property tests (overload disambiguators, operator escaping, init/accessor kinds, extension attribution, locals)
-- [ ] 01-03: SourceKit-LSP capability-inventory spike + LSP-harvest performance spike against a perf-budget fixture (verdict evidence for the v1 semantic path)
+- [x] 01-02: Swift SCIP symbol-scheme spec + shared namer with `scip.ParseSymbol` round-trip property tests (overload disambiguators, operator escaping, init/accessor kinds, extension attribution, locals)
+- [x] 01-03: SourceKit-LSP capability-inventory spike + LSP-harvest performance spike against a perf-budget fixture (verdict evidence for the v1 semantic path)
 
 ### Phase 2: Fallback Indexer & Emission Pipeline
 
@@ -159,7 +159,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Symbol Scheme & Module Foundations | 2/3 | In Progress|  |
+| 1. Symbol Scheme & Module Foundations | 3/3 | In Progress|  |
 | 2. Fallback Indexer & Emission Pipeline | 0/2 | Not started | - |
 | 3. Semantic Indexing on SwiftPM | 0/3 | Not started | - |
 | 4. Hierarchies & Relationships | 0/2 | Not started | - |

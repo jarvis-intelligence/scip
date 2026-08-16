@@ -9,7 +9,7 @@ Requirements for milestone v1.0 (Add Swift support). Each maps to roadmap phases
 
 ### Symbol & Index Foundation
 
-- [ ] **SYM-01**: Every indexed Swift symbol has a stable SCIP symbol string — modules as `swiftpm` packages, overload disambiguators, backtick-escaped operators, `init`/accessor kinds — that round-trips through `bindings/go/scip` symbol parse/format
+- [x] **SYM-01**: Every indexed Swift symbol has a stable SCIP symbol string — modules as `swiftpm` packages, overload disambiguators, backtick-escaped operators, `init`/accessor kinds — that round-trips through `bindings/go/scip` symbol parse/format
 - [x] **SYM-02**: Extension members are attributed to the extended type's symbol path (cross-file `extension Foo` members land under `Foo#`), so findReferences and typeHierarchy never miss them
 - [ ] **SYM-03**: Index output is deterministic (canonical ordering, relative paths, UTF-8 positions) and passes `scip lint` with zero errors
 - [ ] **SYM-04**: `import Foo` statements emit occurrences with the `Import` role resolving to the module's symbol
@@ -72,7 +72,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SYM-01 | Phase 1: Symbol Scheme & Module Foundations | Pending |
+| SYM-01 | Phase 1: Symbol Scheme & Module Foundations | Complete |
 | SYM-02 | Phase 1: Symbol Scheme & Module Foundations | Complete |
 | SYM-03 | Phase 2: Fallback Indexer & Emission Pipeline | Pending |
 | SYM-04 | Phase 3: Semantic Indexing on SwiftPM | Pending |
