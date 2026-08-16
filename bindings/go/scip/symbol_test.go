@@ -145,6 +145,12 @@ func TestParseSymbolError(t *testing.T) {
 		"local 🧠",
 		"local ",
 		"local &&&",
+		// Regression inputs for the peekNext out-of-bounds panic: a trailing
+		// multi-byte rune made the guard (byteIndex+1) pass while the read
+		// (byteIndex+bytesToNextRune) went past the end of the string.
+		"a b c d fooΩ",
+		"test . pkg . barΩ",
+		"a b c d `foo`Ω",
 	} {
 		require.NotPanics(t, func() {
 			if _, err := ParseSymbol(symbolName); err == nil {
