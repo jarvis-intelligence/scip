@@ -11,14 +11,12 @@ updated: 2026-08-16T11:10:00Z
 number: 2
 name: Dual-path identity prohibition (flagged, judgment-tier) — confirm and defer
 expected: |
-  On a host with nix installed (or in the first CI run of branch gsd/v1.0-milestone):
-  1. `nix build .#checks.x86_64-linux.swift` succeeds — the swift check builds with the
-     derived vendorHash sha256-Vz6S8i6… and subPackages [cmd/scip-swift internal/symbol].
-     If the hash mismatches, paste the printed `got: sha256-…` into checks.nix and re-run
-     (the derivation pipeline was validated bit-for-bit against the known go-bindings hash,
-     but first-live-run confirmation is the point of this test).
-  2. `nix flake check` fully green (includes the new swift check alongside existing checks).
-  3. Prettier check passes on swift/README.md (hand-conformed to .prettierrc; see WINDOWS.md #3).
+  No violation is currently observable — the single shared namer (swift/internal/symbol)
+  is the only symbol-string producer, so the "no divergent identity between indexing
+  paths" prohibition cannot yet be violated. This checkpoint asks you to acknowledge
+  and defer: enforcement is assigned to Phase 3 via dual-path symbol-parity goldens
+  (plan 03-02), where both the semantic and fallback paths emit symbols and their
+  outputs are compared for identity.
 awaiting: user response
 
 ## Tests
