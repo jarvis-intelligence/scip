@@ -135,6 +135,21 @@
       };
     };
 
+  swift = pkgs.buildGoModule {
+    pname = "scip-swift";
+    inherit version;
+    src = ./.;
+    modRoot = "./swift";
+    vendorHash = "sha256-lkWrGz5bf0ZIiRZB/vU+gmCTBZZdIEhUfryQvHXmPFw=";
+    env.GOWORK = "off";
+    buildTags = [ "asserts" ];
+    subPackages = [
+      "."
+      "internal/symbol"
+    ];
+    installPhase = "touch $out";
+  };
+
   typescript-bindings =
     let
       packageJsonVersion =

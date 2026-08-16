@@ -39,6 +39,8 @@ jobs:
               - 'bindings/go/scip/go.sum'
               - 'reprolang/go.mod'
               - 'reprolang/go.sum'
+              - 'swift/go.mod'
+              - 'swift/go.sum'
               - 'bindings/typescript/package.json'
               - 'bindings/typescript/package-lock.json'
 
@@ -75,7 +77,7 @@ jobs:
         # https://github.com/golang/go/issues/63901
         run: |
           set -euo pipefail
-          for dir in bindings/go/scip . reprolang; do
+          for dir in bindings/go/scip . reprolang swift; do
             (cd "$dir" && nix develop --command go mod tidy)
           done
 
@@ -91,6 +93,7 @@ jobs:
             packages.x86_64-linux.scip \
             checks.x86_64-linux.go-bindings \
             checks.x86_64-linux.reprolang \
+            checks.x86_64-linux.swift \
             checks.x86_64-linux.typescript-bindings; do
             nix run github:Mic92/nix-update -- \
               --flake --version=skip "$attr"
