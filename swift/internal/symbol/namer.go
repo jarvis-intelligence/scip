@@ -23,18 +23,6 @@ const Scheme = "scip-swift"
 // ManagerSwiftPM is the package manager for SwiftPM target modules.
 const ManagerSwiftPM = "swiftpm"
 
-// DeclKind enumerates the Swift declaration categories the scheme
-// distinguishes. This tracer slice carries only the two kinds the
-// walking-skeleton test needs; plan 01-02 expands the set.
-type DeclKind int
-
-const (
-	// DeclKindStruct is a struct (or class/actor/enum) declaration.
-	DeclKindStruct DeclKind = iota
-	// DeclKindMethod is a method or free function declaration.
-	DeclKindMethod
-)
-
 // Container is one node of a symbol's extended-type-aware ancestry,
 // outermost first.
 type Container struct {
@@ -111,4 +99,11 @@ func Symbol(in SymbolInput) (string, error) {
 		return "", fmt.Errorf("namer produced unparseable symbol %q: %w", s, err)
 	}
 	return s, nil
+}
+
+// LocalSymbol returns a document-scoped local symbol string "local <id>"
+// where id is the source name sanitized to a simple identifier with the
+// ordinal appended for disambiguation.
+func LocalSymbol(sourceName string, ordinal int) string {
+	return ""
 }
