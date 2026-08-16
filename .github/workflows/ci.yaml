@@ -23,7 +23,10 @@ jobs:
   fix:
     # Forks can't be pushed to (their GITHUB_TOKEN is read-only and
     # secrets are not exposed); skip the job entirely there.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Also skip when the Renovate-fix GitHub App is not configured
+    # (fork setups without vars.RENOVATE_FIX_APP_ID) — the job cannot
+    # mint a token and would fail before any nix check runs.
+    if: github.event.pull_request.head.repo.full_name == github.repository && vars.RENOVATE_FIX_APP_ID != ''
     runs-on: ubuntu-latest
     outputs:
       pushed: ${{ steps.push.outputs.pushed }}
