@@ -77,6 +77,7 @@ Recent decisions affecting current work:
 - [Phase 1 / 01-01]: checks.nix swift vendorHash derived as NAR-SHA256 of the GOWORK=off go mod vendor tree (pipeline validated bit-for-bit against the known go-bindings hash) because nix is absent on the executing host; first CI run must confirm nix flake check
 - [Phase ?]: [Phase 1 / 01-02]: Swift symbol scheme frozen as executable spec — golden table (26 rows over mapping rows 1-29), full namer over 22 DeclKind families, retroactive extension members attributed to the owner module's package (SYM-02), overload indices only on Method-family descriptors
 - [Phase ?]: [Phase 1 / 01-02]: Term-family retroactive collisions cannot carry (+N) (grammar allows disambiguators only on Method descriptors) — documented known limitation in scheme.go/README, Phase-3 USR evidence fallback recorded
+- [Phase 1 / 01-03]: SourceKit-LSP semantic path verdict: GO — symbolInfo returned USRs for 60/60 defs incl. every overload (distinct), cross-file/retroactive extension attribution recoverable from USRs (containerName always null; derive containers from USRs in Phase 3), 500-file harvest 4m02s cold / 4m00s warm with 0 crashes, call/type-hierarchy usable; sourcekit/isIndexing unsupported on Xcode 26.3 (gate on the symbolInfo probe instead) — see swift/spikes/2026-08-sourcekit-lsp-findings.md
 
 ### Pending Todos
 
