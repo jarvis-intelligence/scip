@@ -135,6 +135,23 @@
       };
     };
 
+  swift = pkgs.buildGoModule {
+    pname = "scip-swift";
+    inherit version;
+    src = ./.;
+    modRoot = "./swift";
+    vendorHash = "sha256-Vz6S8i6udqSIykS2UmJdgZU07wCUKfuWOcytXMx1Jis=";
+    env.GOWORK = "off";
+    buildTags = [ "asserts" ];
+    # The swift module root has no Go files, so "." is not a buildable
+    # subPackage; list only package directories (reprolang-check pattern).
+    subPackages = [
+      "cmd/scip-swift"
+      "internal/symbol"
+    ];
+    installPhase = "touch $out";
+  };
+
   typescript-bindings =
     let
       packageJsonVersion =

@@ -4,3 +4,8 @@ reprolang/src/node-types.json
 bindings/typescript
 docs/scip.md
 .bin
+
+# GSD planning artifacts (machine-generated, not prettier-governed)
+.planning/
+.gsd/
+AGENTS.md

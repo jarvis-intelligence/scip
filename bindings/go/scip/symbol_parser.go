@@ -372,7 +372,7 @@ func (z *symbolParserV2) error(e errorCase, expectedByte byte, what parseCtx) er
 }
 
 func (z *symbolParserV2) peekNext() (rune, int32) {
-	if z.byteIndex+1 < len(z.SymbolString) {
+	if z.byteIndex+int(z.bytesToNextRune) < len(z.SymbolString) {
 		return findRuneAtIndex(z.SymbolString, z.byteIndex+int(z.bytesToNextRune))
 	}
 	return 0, 0

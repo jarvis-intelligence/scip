@@ -23,7 +23,10 @@ jobs:
   fix:
     # Forks can't be pushed to (their GITHUB_TOKEN is read-only and
     # secrets are not exposed); skip the job entirely there.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Also skip when the Renovate-fix GitHub App is not configured
+    # (fork setups without vars.RENOVATE_FIX_APP_ID) — the job cannot
+    # mint a token and would fail before any nix check runs.
+    if: github.event.pull_request.head.repo.full_name == github.repository && vars.RENOVATE_FIX_APP_ID != ''
     runs-on: ubuntu-latest
     outputs:
       pushed: ${{ steps.push.outputs.pushed }}
@@ -39,6 +42,8 @@ jobs:
               - 'bindings/go/scip/go.sum'
               - 'reprolang/go.mod'
               - 'reprolang/go.sum'
+              - 'swift/go.mod'
+              - 'swift/go.sum'
               - 'bindings/typescript/package.json'
               - 'bindings/typescript/package-lock.json'
 
@@ -75,7 +80,7 @@ jobs:
         # https://github.com/golang/go/issues/63901
         run: |
           set -euo pipefail
-          for dir in bindings/go/scip . reprolang; do
+          for dir in bindings/go/scip . reprolang swift; do
             (cd "$dir" && nix develop --command go mod tidy)
           done
 
@@ -91,6 +96,7 @@ jobs:
             packages.x86_64-linux.scip \
             checks.x86_64-linux.go-bindings \
             checks.x86_64-linux.reprolang \
+            checks.x86_64-linux.swift \
             checks.x86_64-linux.typescript-bindings; do
             nix run github:Mic92/nix-update -- \
               --flake --version=skip "$attr"
