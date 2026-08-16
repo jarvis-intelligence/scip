@@ -140,7 +140,7 @@
     inherit version;
     src = ./.;
     modRoot = "./swift";
-    vendorHash = "sha256-lkWrGz5bf0ZIiRZB/vU+gmCTBZZdIEhUfryQvHXmPFw=";
+    vendorHash = "sha256-Vz6S8i6udqSIykS2UmJdgZU07wCUKfuWOcytXMx1Jis=";
     env.GOWORK = "off";
     buildTags = [ "asserts" ];
     subPackages = [
