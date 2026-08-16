@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Symbol Scheme & Module Foundations
 status: executing
-stopped_at: Completed 01-symbol-scheme-module-foundations/01-01-PLAN.md
-last_updated: "2026-08-16T09:23:34.211Z"
+stopped_at: Completed 01-symbol-scheme-module-foundations/01-02-PLAN.md
+last_updated: "2026-08-16T09:44:37.917Z"
 last_activity: 2026-08-16
 last_activity_desc: Roadmap created; all 17 v1 requirements mapped to 6 phases; traceability filled in REQUIREMENTS.md
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-08-16)
 ## Current Position
 
 Phase: 1 (Symbol Scheme & Module Foundations) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-08-16 — Phase 1 execution started
 
-Progress: [███░░░░░░░] 33%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [███░░░░░░░] 33%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 1 P01 | 17min | 3 tasks | 13 files |
+| Phase 01 P02 | 11min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Recent decisions affecting current work:
 - [Phase 1 / 01-01]: swift tracer namer_test.go carries a rapid property so pgregory.net/rapid stays imported (go mod tidy drops unused requires; plan pins rapid now for zero 01-02 churn)
 - [Phase 1 / 01-01]: ParseSymbol multi-byte panic fixed with the one-line peekNext guard (byteIndex+bytesToNextRune); trailing runes now return unrecognizedDescriptorError — STATE blocker cleared
 - [Phase 1 / 01-01]: checks.nix swift vendorHash derived as NAR-SHA256 of the GOWORK=off go mod vendor tree (pipeline validated bit-for-bit against the known go-bindings hash) because nix is absent on the executing host; first CI run must confirm nix flake check
+- [Phase ?]: [Phase 1 / 01-02]: Swift symbol scheme frozen as executable spec — golden table (26 rows over mapping rows 1-29), full namer over 22 DeclKind families, retroactive extension members attributed to the owner module's package (SYM-02), overload indices only on Method-family descriptors
+- [Phase ?]: [Phase 1 / 01-02]: Term-family retroactive collisions cannot carry (+N) (grammar allows disambiguators only on Method descriptors) — documented known limitation in scheme.go/README, Phase-3 USR evidence fallback recorded
 
 ### Pending Todos
 
@@ -95,6 +98,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-16T09:23:34.197Z
-Stopped at: Completed 01-symbol-scheme-module-foundations/01-01-PLAN.md
+Last session: 2026-08-16T09:44:37.907Z
+Stopped at: Completed 01-symbol-scheme-module-foundations/01-02-PLAN.md
 Resume file: None

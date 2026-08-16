@@ -36,12 +36,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The new `swift/` module builds and its tests pass through `go.work`, the paths-filtered CI job, and `nix flake check` — nothing in the existing repo (Go workspace, bindings codegen, reprolang tests) breaks
   5. Spike findings are recorded with measured evidence: a SourceKit-LSP capability inventory (overloads, retroactive extensions, generics, witnesses) and harvest performance on a fixture repo, with an explicit go/no-go verdict on the LSP semantic path for v1
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 
 Plans:
 
 - [x] 01-01-PLAN.md
-- [ ] 01-02-PLAN.md
+- [x] 01-02-PLAN.md
 - [ ] 01-03-PLAN.md
 
 **Wave 1**
@@ -159,7 +159,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Symbol Scheme & Module Foundations | 1/3 | In Progress|  |
+| 1. Symbol Scheme & Module Foundations | 2/3 | In Progress|  |
 | 2. Fallback Indexer & Emission Pipeline | 0/2 | Not started | - |
 | 3. Semantic Indexing on SwiftPM | 0/3 | Not started | - |
 | 4. Hierarchies & Relationships | 0/2 | Not started | - |
