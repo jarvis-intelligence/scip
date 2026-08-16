@@ -764,17 +764,22 @@ func main() {
 		flag.Usage()
 		os.Exit(2)
 	}
+	if *flagMode != "capability" && *flagMode != "perf" {
+		fmt.Fprintf(os.Stderr, "lsp_probe: invalid -mode %q (want capability|perf)\n", *flagMode)
+		flag.Usage()
+		os.Exit(2)
+	}
 	started := time.Now()
 	fixtureAbs, err := filepath.Abs(*flagFixture)
 	if err != nil {
-		fail(err)
+		failBeforeServer(err)
 	}
 	files, err := swiftSources(fixtureAbs)
 	if err != nil {
-		fail(err)
+		failBeforeServer(err)
 	}
 	if len(files) == 0 {
-		fail(fmt.Errorf("no .swift sources found under %s", fixtureAbs))
+		failBeforeServer(fmt.Errorf("no .swift sources found under %s", fixtureAbs))
 	}
 
 	// Readiness probe defaults per mode.
@@ -792,7 +797,7 @@ func main() {
 
 	out, err := os.Create(*flagOut)
 	if err != nil {
-		fail(err)
+		failBeforeServer(err)
 	}
 	ev := &evidence{w: bufio.NewWriter(out), f: out, trim: *flagMode == "perf"}
 	defer func() {
@@ -802,7 +807,10 @@ func main() {
 
 	serverPath, discovery, err := discoverServer()
 	if err != nil {
-		fail(err)
+		fmt.Fprintf(os.Stderr, "lsp_probe: %v\n", err)
+		ev.w.Flush()
+		out.Close()
+		os.Exit(1)
 	}
 	ev.write(rec{Phase: "meta", Result: mustJSON(map[string]any{
 		"mode":                  *flagMode,
@@ -821,7 +829,7 @@ func main() {
 	ctx := context.Background()
 	d := &driver{ev: ev, callTOM: *callTimeout, openDocs: map[string]bool{}}
 	if err := d.start(ctx, serverPath); err != nil {
-		fail(err)
+		d.fail(err)
 	}
 	defer func() {
 		d.conn.Close()
@@ -835,7 +843,7 @@ func main() {
 	}()
 
 	if err := d.initialize(ctx, fixtureAbs); err != nil {
-		fail(err)
+		d.fail(err)
 	}
 
 	// Readiness gate before any harvest (cold-index trap guard).
@@ -844,7 +852,7 @@ func main() {
 	for _, f := range files {
 		text, err := os.ReadFile(f)
 		if err != nil {
-			fail(err)
+			d.fail(err)
 		}
 		if pos, ok := findDecl(string(text), probeKind, probeSymbol); ok {
 			probePath, probePos = f, pos
@@ -852,18 +860,18 @@ func main() {
 		}
 	}
 	if probePath == "" {
-		fail(fmt.Errorf("probe declaration %s %s not found in fixture", probeKind, probeSymbol))
+		d.fail(fmt.Errorf("probe declaration %s %s not found in fixture", probeKind, probeSymbol))
 	}
 	timeToReady, indexingSupported, err := d.readinessGate(ctx, probePath, probePos)
 	if err != nil {
-		fail(err)
+		d.fail(err)
 	}
 	_ = indexingSupported
 
 	// Harvest phase 1: one didOpen + documentSymbol pass per file.
 	defs, _, err := d.harvestFiles(ctx, files)
 	if err != nil {
-		fail(err)
+		d.fail(err)
 	}
 
 	occurrences := 0
@@ -887,7 +895,7 @@ func main() {
 		// Perf discipline: references pass per unique definition, bounded pool.
 		occurrences, err = d.referencesPass(ctx, defs, *flagWorkers)
 		if err != nil {
-			fail(err)
+			d.fail(err)
 		}
 	}
 
@@ -971,7 +979,30 @@ func firstItem(raw json.RawMessage) (json.RawMessage, bool) {
 	return arr[0], true
 }
 
-func fail(err error) {
+// failBeforeServer reports a startup error before any resources exist that
+// need cleanup; plain exit is safe here.
+func failBeforeServer(err error) {
 	fmt.Fprintf(os.Stderr, "lsp_probe: %v\n", err)
+	os.Exit(1)
+}
+
+// fail flushes buffered evidence, then shuts down the LSP server process and
+// waits for it to exit before terminating — os.Exit alone would skip the
+// registered defers and orphan the spawned sourcekit-lsp (spike findings,
+// CR-02).
+func (d *driver) fail(err error) {
+	fmt.Fprintf(os.Stderr, "lsp_probe: %v\n", err)
+	d.ev.w.Flush()
+	d.ev.f.Close()
+	d.conn.Close()
+	if d.cmd != nil && d.cmd.Process != nil {
+		done := make(chan struct{})
+		go func() { d.cmd.Wait(); close(done) }()
+		select {
+		case <-done:
+		case <-time.After(10 * time.Second):
+			d.cmd.Process.Kill()
+		}
+	}
 	os.Exit(1)
 }
