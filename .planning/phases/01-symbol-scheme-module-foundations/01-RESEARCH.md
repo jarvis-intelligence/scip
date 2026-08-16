@@ -77,7 +77,7 @@ swift/                                  # NEW Go module: github.com/scip-code/sc
     ├── lsp_probe/                      # runnable Go driver (cmd-style main or _test)
     ├── fixture/                        # SwiftPM capability fixture (Package.swift + sources)
     ├── perf/                           # generated ~500-file perf fixture
-    └── 2026-09-sourcekit-lsp-findings.md   # evidence + go/no-go verdict
+    └── 2026-08-sourcekit-lsp-findings.md   # evidence + go/no-go verdict
 ```
 
 Deliberate deviations from the full Phase-2+ layout (project ARCHITECTURE.md): no `grammar/`, no `internal/fallback/`, no `internal/emit/` in Phase 1 — they belong to Phase 2. Keep `internal/` (not a flat package like reprolang's `repro/`) per project research.
@@ -302,7 +302,7 @@ Plan 01-03 must produce **measured evidence + an explicit go/no-go verdict** on 
 3. **Handshake**: `initialize` with `rootUri` = fixture, client capabilities including `window.workDoneProgress`; **record the full `InitializeResult.capabilities`** (does it advertise callHierarchyProvider/typeHierarchyProvider? negotiated positionEncoding?). Send `initialized`.
 4. **Readiness gate**: poll the `sourcekit/isIndexing` extension request (empty params; result `{indexing: bool}`) until false or timeout, then **verify by probing**: `textDocument/symbolInfo` at a known definition must return a non-empty USR before harvesting (guards the cold-index trap). Record time-to-ready cold vs warm.
 5. **Harvest per file**: `didOpen` (text from disk, version 1) → `textDocument/documentSymbol` → for each def range: `textDocument/symbolInfo` (record `name`, `containerName`, `usr`, `kind`, `isDynamic`, `receiverUsrs`, `systemModule.moduleName`), `textDocument/definition`, `textDocument/references {includeDeclaration: true}`. For one call site and one type: `prepareCallHierarchy`+`incomingCalls`/`outgoingCalls`, `prepareTypeHierarchy`+`supertypes`/`subtypes`.
-6. **Output**: JSONL evidence (one record per request/response with latency) + a findings document `swift/spikes/2026-09-sourcekit-lsp-findings.md` with the capability inventory table.
+6. **Output**: JSONL evidence (one record per request/response with latency) + a findings document `swift/spikes/2026-08-sourcekit-lsp-findings.md` with the capability inventory table.
 
 Extension request shapes verified against the official contributor docs [CITED: https://github.com/swiftlang/sourcekit-lsp/blob/main/Contributor%20Documentation/LSP%20Extensions.md]:
 - `textDocument/symbolInfo` — params `{textDocument, position}` → `SymbolDetails[]` with `name`, `containerName`, `usr`, `bestLocalDeclaration`, `kind`, `isDynamic`, `receiverUsrs`, `isSystem`, `systemModule: {moduleName, groupName?}`. Documented as the machine-to-machine surface ("to allow one LSP backend to query another LSP backend") — exactly our use case.
