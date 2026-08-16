@@ -782,7 +782,8 @@ func main() {
 	if probeSymbol == "" {
 		probeSymbol = "Shape"
 		if *flagMode == "perf" {
-			probeSymbol = "Gen0000Widget"
+			// Matches the default generate -files 500 padding (Gen000…Gen499).
+			probeSymbol = "Gen000Widget"
 		}
 	}
 	if probeKind == "" {

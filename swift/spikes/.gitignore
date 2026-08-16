@@ -1,0 +1,5 @@
+# Perf-run evidence is runtime output (6MB per run); regenerate via the
+# commands in 2026-08-sourcekit-lsp-findings.md. Capability evidence
+# (evidence-capability.jsonl) IS committed - the findings doc quotes it.
+evidence-perf-cold.jsonl
+evidence-perf-warm.jsonl
