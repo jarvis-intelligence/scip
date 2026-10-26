@@ -341,11 +341,8 @@ func (c *Converter) insertOccurrenceData(doc *scip.Document, docID int64, symbol
 				symbolRoles[occ.Symbol] = make(map[int32]struct{})
 			}
 			symbolRoles[occ.Symbol][occ.SymbolRoles] = struct{}{}
-			if _, ok := symbolToID[occ.Symbol]; !ok {
-				symbolToID[occ.Symbol], err = c.insertGlobalSymbols(&scip.SymbolInformation{Symbol: occ.Symbol})
-				if err != nil {
-					return fmt.Errorf("inserting symbol %q for occurrence: %w", occ.Symbol, err)
-				}
+			if _, err = c.ensureSymbolID(symbolToID, occ.Symbol); err != nil {
+				return fmt.Errorf("inserting symbol %q for occurrence: %w", occ.Symbol, err)
 			}
 		}
 
@@ -375,6 +372,18 @@ func (c *Converter) insertOccurrenceData(doc *scip.Document, docID int64, symbol
 	return nil
 }
 
+func (c *Converter) ensureSymbolID(symbolToID map[string]int64, symbol string) (int64, error) {
+	if id, ok := symbolToID[symbol]; ok {
+		return id, nil
+	}
+	id, err := c.insertGlobalSymbols(&scip.SymbolInformation{Symbol: symbol})
+	if err != nil {
+		return 0, err
+	}
+	symbolToID[symbol] = id
+	return id, nil
+}
+
 func (c *Converter) insertEnclosingRangeData(symbolToID map[string]int64, occs []*scip.Occurrence, docID int64) error {
 	defnEnclRangesStmt, err := c.conn.Prepare("INSERT INTO defn_enclosing_ranges (document_id, symbol_id, start_line, start_char, end_line, end_char) VALUES (?, ?, ?, ?, ?, ?)")
 	if err != nil {
@@ -396,9 +405,9 @@ func (c *Converter) insertEnclosingRangeData(symbolToID map[string]int64, occs [
 		if err := enclRange.Validate(); err != nil {
 			return fmt.Errorf("bad enclosing range %v for symbol %q: %w", enclRange, occ.Symbol, err)
 		}
-		symbolID, ok := symbolToID[occ.Symbol]
-		if !ok {
-			return fmt.Errorf("symbol %q has definition occurrence, but no SymbolInformation", occ.Symbol)
+		symbolID, err := c.ensureSymbolID(symbolToID, occ.Symbol)
+		if err != nil {
+			return fmt.Errorf("inserting symbol %q for definition: %w", occ.Symbol, err)
 		}
 
 		defnEnclRangesStmt.BindInt64(1, docID)
