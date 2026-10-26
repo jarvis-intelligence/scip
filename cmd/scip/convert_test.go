@@ -51,6 +51,53 @@ func TestConvert_SmokeTest(t *testing.T) {
 	}
 }
 
+func TestConvert_DefinitionWithoutSymbolInformation(t *testing.T) {
+	sym := "scip-python python pkg 0 `pkg.mod`/Slotted#"
+	index := &scip.Index{
+		Documents: []*scip.Document{
+			{
+				RelativePath: "pkg/mod.py",
+				Occurrences: []*scip.Occurrence{
+					{
+						Symbol:         sym,
+						Range:          []int32{6, 6, 13},
+						SymbolRoles:    int32(scip.SymbolRole_Definition),
+						EnclosingRange: []int32{6, 0, 10, 18},
+					},
+				},
+			},
+		},
+	}
+
+	db, err := createSQLiteDatabase(filepath.Join(t.TempDir(), "index.db"))
+	require.NoError(t, err)
+	defer func() { require.NoError(t, db.Close()) }()
+	writer, err := zstd.NewWriter(nil)
+	require.NoError(t, err)
+
+	require.NoError(t, NewConverter(db, chunkSizeHint, writer).Convert(index))
+
+	var ranges [][4]int64
+	err = sqlitex.ExecuteTransient(db,
+		`SELECT r.start_line, r.start_char, r.end_line, r.end_char
+		   FROM defn_enclosing_ranges r
+		   JOIN global_symbols g ON g.id = r.symbol_id
+		  WHERE g.symbol = ?`,
+		&sqlitex.ExecOptions{
+			Args: []any{sym},
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				ranges = append(ranges, [4]int64{
+					stmt.ColumnInt64(0), stmt.ColumnInt64(1),
+					stmt.ColumnInt64(2), stmt.ColumnInt64(3),
+				})
+				return nil
+			},
+		})
+	require.NoError(t, err)
+	require.Equal(t, [][4]int64{{6, 0, 10, 18}}, ranges)
+	checkSymbols(t, index, db)
+}
+
 func testIndex1() *scip.Index {
 	pkg1S1Sym := "scip-go go . . pkg1/S1#"
 	pkg1I1Sym := "scip-go go . . pkg1/I1#"
