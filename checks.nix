@@ -44,12 +44,41 @@
     installPhase = "touch $out";
   };
 
+  dotnet-bindings =
+    let
+      csprojVersion = builtins.head (
+        builtins.match ".*<Version>([^<]+)</Version>.*" (builtins.readFile ./bindings/dotnet/Scip.csproj)
+      );
+    in
+    assert pkgs.lib.assertMsg (
+      csprojVersion == version
+    ) "Version mismatch in bindings/dotnet/Scip.csproj: expected ${version}, got ${csprojVersion}";
+    pkgs.buildDotnetModule {
+      pname = "scip-bindings-dotnet";
+      inherit version;
+      src = ./bindings/dotnet;
+      projectFile = "Scip.csproj";
+      # Regenerate with:
+      #   nix build .#checks.x86_64-linux.dotnet-bindings.passthru.fetch-deps
+      #   ./result bindings/dotnet/deps.json
+      nugetDeps = ./bindings/dotnet/deps.json;
+      dotnet-sdk = pkgs.dotnetCorePackages.sdk_10_0;
+      # A library has nothing to publish; the nupkg is the artifact.
+      dontPublish = true;
+      packNupkg = true;
+      # LICENSE is a symlink to the repository root (matches
+      # bindings/{haskell,rust,typescript}) and packing follows it.
+      prePatch = ''
+        cp --remove-destination ${./LICENSE} LICENSE
+      '';
+    };
+
   go-bindings = pkgs.buildGoModule {
     pname = "scip-bindings-go";
     inherit version;
     src = ./.;
     modRoot = "./bindings/go/scip";
-    vendorHash = "sha256-9uPDs/MoITP8Q92HQEMoRUB7Dz30n242z4cSnxjiPCk=";
+    vendorHash = "sha256-f36BsvI5AWAnuxe2BWD5Bkb6Xb3kdIkkSw3Td2QlcrA=";
     env.GOWORK = "off";
     buildTags = [ "asserts" ];
     subPackages = [
@@ -88,7 +117,7 @@
       inherit version;
       src = ./.;
       modRoot = "./reprolang";
-      vendorHash = "sha256-0fVnOI6moTuYOygNqlJ1tLC5jJrkSKGVDWtvWvasYQ8=";
+      vendorHash = "sha256-xSQqFbrbqhzxSGcW/ig3jkDRHMVxVXYaLOi3wMs/PMc=";
       proxyVendor = true;
       env.GOWORK = "off";
       buildInputs = [ pkgs.tree-sitter ];
@@ -146,7 +175,7 @@
       pname = "scip-bindings-typescript";
       inherit version;
       src = ./bindings/typescript;
-      npmDepsHash = "sha256-hLncSM2iXLVl3F489w3iSunHZ2+QG1jf16E47qRg+dk=";
+      npmDepsHash = "sha256-zDf2FErnWeipIBs2tWb078Dx0DHUXj5nYDsywkVlkjo=";
       buildPhase = ''
         runHook preBuild
         npm run build
